@@ -1,0 +1,30 @@
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: rgba(0, 29, 41);
+  color: white;
+  height: var(--navbar-height, 64px); /* configurable --navbar-height */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* keep inner container vertically centered and full height */
+nav > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+h1 {
+  margin: 0;
+}
+
+nav > div > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+}

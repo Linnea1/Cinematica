@@ -1,0 +1,22 @@
+:root {
+  --navbar-height: 64px; /* adjust to match navbar */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+body {
+  min-width: 100vw;
+  min-height: 100vh;
+}
+
+.container {
+  width: 80%;
+  margin: 0 auto;
+}

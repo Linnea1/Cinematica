@@ -1,0 +1,28 @@
+.inspect-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.inspect-card {
+  background: #111;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  max-width: 320px;
+  text-align: center;
+}
+
+.inspect-card img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.card-info p {
+  margin: 2px 0;
+}

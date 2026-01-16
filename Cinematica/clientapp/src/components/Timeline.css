@@ -1,0 +1,114 @@
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.timeline-slot {
+  width: 200px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.ghost-slot {
+  width: 10px;
+  flex-shrink: 0;
+  transition: width 160ms ease;
+}
+
+.ghost-slot.active {
+  width: 160px;
+}
+
+.timeline-wrapper {
+  position: relative;
+  width: fit-content;
+  margin-bottom: 18px;
+  padding-top: 6px;
+  box-sizing: content-box;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 999px;
+
+  background: linear-gradient(
+    90deg,
+    #7c7cff,
+    #4cc9f0,
+    #80ffea,
+    #ffd166,
+    #ff6b6b
+  );
+  z-index: 2;
+}
+
+.timeline-line::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 999px;
+
+  background: inherit;
+  filter: blur(18px);
+  opacity: 0.25;
+  z-index: -1;
+}
+
+.decade-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #eaf6ff;
+  text-shadow: 0 0 4px rgba(124, 124, 255, 0.8),
+    0 0 10px rgba(76, 201, 240, 0.6);
+
+  transform: translateY(-50%);
+
+  margin-bottom: 6px;
+}
+
+.decade-marker .tick {
+  width: 2px;
+  height: 16px;
+
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #ffffff, #80ffea, #4cc9f0);
+  position: relative;
+}
+
+.decade-marker .tick::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  background: inherit;
+  filter: blur(6px);
+  opacity: 0.9;
+  z-index: -1;
+  border-radius: 2px;
+}
+
+@keyframes timelineShimmer {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+.timeline-line {
+  animation: timelineShimmer 6s ease-in-out infinite;
+}
