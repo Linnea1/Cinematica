@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import shuffleArray from "./shuffle";
 
 export const useGameStore = create((set, get) => ({
   phase: "idle",
@@ -6,14 +7,15 @@ export const useGameStore = create((set, get) => ({
   board: [],
   activeCard: null,
   chosenIndex: null,
-
   showCardInfoFor: null,
-  openCardInfo: (movie) => set({ showCardInfoFor: movie }),
-  closeCardInfo: () => set({ showCardInfoFor: null }),
+  showCardInfoWrong: false,
+  openCardInfo: (movie) =>
+    set({ showCardInfoFor: movie, showCardInfoWrong: false }),
+  closeCardInfo: () => set({ showCardInfoFor: null, showCardInfoWrong: false }),
 
   startGame: (initialDeck) => {
     set({
-      deck: [...initialDeck],
+      deck: shuffleArray(initialDeck),
       board: [],
       activeCard: null,
       chosenIndex: null,
@@ -92,6 +94,7 @@ export const useGameStore = create((set, get) => ({
         chosenIndex: null,
         phase: "resolve",
         showCardInfoFor: activeCard,
+        showCardInfoWrong: true,
       });
     }
 

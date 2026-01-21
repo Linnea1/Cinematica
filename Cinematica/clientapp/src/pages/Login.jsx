@@ -15,8 +15,28 @@ export default function Login() {
         method: "POST",
         body: form,
         credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
       });
 
+      const contentType = res.headers.get("content-type") || "";
+
+      // JSON response from backend (SPA flow)
+      if (contentType.includes("application/json")) {
+        const json = await res.json();
+        if (res.ok && json.success) {
+          // navigate client-side without full reload
+          navigate(json.redirect || "/");
+          return;
+        }
+
+        setMsg(json.message || json.error || "Login failed");
+        return;
+      }
+
+      // Fallback: server returned HTML (should not happen now)
       if (res.redirected) {
         window.location.href = res.url;
         return;
@@ -25,8 +45,8 @@ export default function Login() {
       const text = await res.text();
       setMsg(text);
     } catch (err) {
-      setMsg("Network error");
       console.error(err);
+      setMsg("Network error");
     }
   }
 
@@ -46,12 +66,7 @@ export default function Login() {
           <button type="submit">Sign in</button>
         </div>
       </form>
-      {msg && (
-        <div
-          style={{ marginTop: 12 }}
-          dangerouslySetInnerHTML={{ __html: msg }}
-        />
-      )}
+      {msg && <div style={{ marginTop: 12 }}>{msg}</div>}
     </div>
   );
 }

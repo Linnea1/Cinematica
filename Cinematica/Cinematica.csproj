@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Folder Include="clientapp\" />
+    <Folder Include="Helpers\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 

@@ -4,6 +4,7 @@ import Register from "./pages/Register.jsx";
 import Game from "./pages/Game.jsx";
 import BoardLine from "./pages/BoardLine.jsx";
 import InspectView from "./pages/InspectView.jsx";
+import Decks from "./pages/Decks.jsx";
 import "./App.css";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
       <Route path="/game" element={<Game />} />
       <Route path="/inspect" element={<InspectView />} />
       <Route path="/board" element={<BoardLine />} />
+      <Route path="/decks" element={<Decks />} />
     </Routes>
   );
 }

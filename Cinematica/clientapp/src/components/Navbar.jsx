@@ -45,6 +45,7 @@ export default function NavBar() {
           ) : (
             <></>
           )}
+          <Link to="/decks">Decks</Link>
         </div>
 
         {user && user.isAuthenticated ? (

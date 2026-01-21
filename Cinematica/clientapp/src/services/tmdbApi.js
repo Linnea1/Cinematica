@@ -1,5 +1,12 @@
-export async function fetchDeck() {
-  const res = await fetch("/api/tmdb/deck", {
+import { LIST_IDS } from "./listIds";
+
+export async function fetchDeck(listId) {
+  let id;
+  if (!listId) id = LIST_IDS.mainDeck.id;
+  else if (typeof listId === "object" && listId.id) id = listId.id;
+  else id = listId;
+
+  const res = await fetch(`/api/tmdb/deck?listId=${encodeURIComponent(id)}`, {
     method: "GET",
     credentials: "include",
   });

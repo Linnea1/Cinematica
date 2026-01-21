@@ -3,6 +3,9 @@
   align-items: center;
   gap: 12px;
   padding: 0 8px;
+  width: -moz-fit-content;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .timeline-slot {
@@ -24,10 +27,15 @@
 
 .timeline-wrapper {
   position: relative;
-  width: fit-content;
+  width: 100%;
   margin-bottom: 18px;
   padding-top: 6px;
-  box-sizing: content-box;
+  box-sizing: border-box;
+}
+
+.timeline-wrapper {
+  overflow: visible;
+  padding-bottom: 64px;
 }
 
 .timeline-line {
@@ -69,12 +77,20 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   color: #eaf6ff;
-  text-shadow: 0 0 4px rgba(124, 124, 255, 0.8),
+  text-shadow:
+    0 0 4px rgba(124, 124, 255, 0.8),
     0 0 10px rgba(76, 201, 240, 0.6);
 
   transform: translateY(-50%);
 
   margin-bottom: 6px;
+}
+
+.decade-marker.absolute {
+  position: absolute;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
 }
 
 .decade-marker .tick {

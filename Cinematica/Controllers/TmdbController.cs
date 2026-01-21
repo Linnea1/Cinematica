@@ -42,131 +42,90 @@ public class TmdbController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogError("TMDb API key not configured.");
+            _logger.LogError("TMDb API key not configured."); 
             throw new InvalidOperationException("TMDb API key not configured. Set Tmdb:ApiKey or Tmdb__ApiKey.");
         }
 
         _apiKey = key;
     }
 
-  
-    // params:
-    //   minVotes
-    //   minRating
-    //   minYear 
-    //   maxYear 
-    //   decades
+    // NOTE: This endpoint requires a `listId` query parameter and will always return the full list.
     [HttpGet("deck")]
-    public async Task<IActionResult> GetDeck(
-        [FromQuery] int? minVotes,
-        [FromQuery] decimal? minRating,
-        [FromQuery] int? minYear,
-        [FromQuery] int? maxYear,
-        [FromQuery] bool decades = false)
+    public async Task<IActionResult> GetDeck([FromQuery] string? listId)
     {
-        var cacheKey = $"tmdb_deck_v2_{minVotes}_{minRating}_{minYear}_{maxYear}_{decades}";
+        if (string.IsNullOrWhiteSpace(listId))
+            return BadRequest(new { error = "listId query parameter is required" });
+
+        var cacheKey = $"tmdb_list_{listId}";
         if (_cache.TryGetValue(cacheKey, out object? cached))
+        {
+            if (cached is MovieDto[] cachedArr)
+                _logger.LogInformation("Returning cached TMDb list {ListId} with {Count} movies", listId, cachedArr.Length);
+            else
+                _logger.LogInformation("Returning cached TMDb list {ListId}", listId);
+
             return Ok(cached);
+        }
 
         var client = _httpFactory.CreateClient();
 
-        var votes = minVotes ?? 300;
-        var rating = minRating ?? 6.0m;
-
-        var rand = new Random();
-
-        List<MovieDto> pool = new();
-
-        if (decades)
+        var baseUrl = $"https://api.themoviedb.org/3/list/{listId}";
+        var q = new Dictionary<string, string?>
         {
-            var startDecade = 1950;
-            var currentYear = DateTime.UtcNow.Year;
-            var endDecade = (currentYear / 10) * 10;
-            var decadesList = new List<(int from, int to)>();
-            for (int d = startDecade; d <= endDecade; d += 10)
-                decadesList.Add((d, d + 9));
+            ["api_key"] = _apiKey,
+            ["language"] = "en-US"
+        };
 
-            foreach (var (fromYear, toYear) in decadesList)
-            {
-                try
-                {
-                    var found = await GetSampleForRange(client, votes, rating, fromYear, toYear, 3);
-                    pool.AddRange(found);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Decade fetch failed for {From}-{To}", fromYear, toYear);
-                    
-                }
-            }
-        }
-        else
+        var listUrl = QueryHelpers.AddQueryString(baseUrl, q);
+        var resp = await client.GetAsync(listUrl);
+        if (!resp.IsSuccessStatusCode)
         {
-            var baseUrl = "https://api.themoviedb.org/3/discover/movie";
-            var q = new Dictionary<string, string?>
-            {
-                ["api_key"] = _apiKey,
-                ["language"] = "en-US",
-                ["include_adult"] = "false",
-                ["vote_count.gte"] = votes.ToString(CultureInfo.InvariantCulture),
-                ["vote_average.gte"] = rating.ToString(CultureInfo.InvariantCulture),
-                ["sort_by"] = "vote_count.desc",
-                ["page"] = "1"
-            };
-            if (minYear.HasValue) q["primary_release_date.gte"] = $"{minYear.Value}-01-01";
-            if (maxYear.HasValue) q["primary_release_date.lte"] = $"{maxYear.Value}-12-31";
-
-            var discoverUrl = QueryHelpers.AddQueryString(baseUrl, q);
-            var resp = await client.GetAsync(discoverUrl);
-            if (!resp.IsSuccessStatusCode)
-            {
-                var content = await resp.Content.ReadAsStringAsync();
-                _logger.LogWarning("TMDb discover failed: {Status} {Content}", (int)resp.StatusCode, content);
-                return StatusCode((int)resp.StatusCode, new { error = "TMDb discover failed", status = (int)resp.StatusCode, body = content });
-            }
-
-            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStreamAsync());
-            var totalPages = doc.RootElement.GetProperty("total_pages").GetInt32();
-            var maxPage = Math.Min(totalPages, 50);
-            var page = rand.Next(1, Math.Max(2, maxPage + 1));
-
-            // fetch the chosen page
-            q["page"] = page.ToString();
-            var pageUrl = QueryHelpers.AddQueryString(baseUrl, q);
-            var pageResp = await client.GetAsync(pageUrl);
-            if (!pageResp.IsSuccessStatusCode)
-            {
-                var content = await pageResp.Content.ReadAsStringAsync();
-                _logger.LogWarning("TMDb page fetch failed: {Status} {Content}", (int)pageResp.StatusCode, content);
-                return StatusCode((int)pageResp.StatusCode, new { error = "TMDb page failed", status = (int)pageResp.StatusCode, body = content });
-            }
-
-            using var pageDoc = JsonDocument.Parse(await pageResp.Content.ReadAsStreamAsync());
-            var items = pageDoc.RootElement.GetProperty("results")
-                .EnumerateArray()
-                .Select(e => new
-                {
-                    Id = e.GetProperty("id").GetInt32(),
-                    Title = e.GetProperty("title").GetString() ?? string.Empty,
-                    Overview = e.TryGetProperty("overview", out var ov) && ov.ValueKind == JsonValueKind.String ? ov.GetString() ?? string.Empty : string.Empty,
-                    PosterPath = e.TryGetProperty("poster_path", out var p) && p.ValueKind != JsonValueKind.Null ? p.GetString() : null,
-                    ReleaseDate = e.TryGetProperty("release_date", out var rd) && rd.ValueKind == JsonValueKind.String ? rd.GetString() : null,
-                    Rating = e.TryGetProperty("vote_average", out var va) && va.ValueKind != JsonValueKind.Null ? va.GetDecimal() : (decimal?)null
-                })
-                .ToList();
-
-            pool.AddRange(await EnrichMovies(client, items));
+            var content = await resp.Content.ReadAsStringAsync();
+            _logger.LogWarning("TMDb list fetch failed for {ListId}: {Status} {Content}", listId, (int)resp.StatusCode, content);
+            return StatusCode((int)resp.StatusCode, new { error = "TMDb list fetch failed", status = (int)resp.StatusCode, body = content });
         }
 
-        var distinct = pool
-            .GroupBy(m => m.Id)
-            .Select(g => g.First())
-            .OrderBy(_ => rand.Next())
-            .Take(20)
-            .ToArray();
+        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStreamAsync());
+        if (!doc.RootElement.TryGetProperty("items", out var itemsElement) || itemsElement.ValueKind != JsonValueKind.Array)
+        {
+            _logger.LogWarning("TMDb list {ListId} has no items", listId);
+            _cache.Set(cacheKey, Array.Empty<MovieDto>(), TimeSpan.FromMinutes(10));
+            return Ok(Array.Empty<MovieDto>());
+        }
 
-        _cache.Set(cacheKey, distinct, TimeSpan.FromMinutes(5));
-        return Ok(distinct);
+        // LOG: raw JSON array length from TMDb and parsed intermediate count
+        try
+        {
+            int rawCount = itemsElement.GetArrayLength();
+            _logger.LogInformation("TMDb list {ListId} raw JSON items length: {RawCount}", listId, rawCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not get raw array length for TMDb list {ListId}", listId);
+        }
+
+        var items = itemsElement.EnumerateArray()
+            .Select(e => new
+            {
+                Id = e.GetProperty("id").GetInt32(),
+                Title = e.GetProperty("title").GetString() ?? string.Empty,
+                Overview = e.TryGetProperty("overview", out var ov) && ov.ValueKind == JsonValueKind.String ? ov.GetString() ?? string.Empty : string.Empty,
+                PosterPath = e.TryGetProperty("poster_path", out var p) && p.ValueKind != JsonValueKind.Null ? p.GetString() : null,
+                ReleaseDate = e.TryGetProperty("release_date", out var rd) && rd.ValueKind == JsonValueKind.String ? rd.GetString() : null,
+                Rating = e.TryGetProperty("vote_average", out var va) && va.ValueKind != JsonValueKind.Null ? va.GetDecimal() : (decimal?)null
+            })
+            .ToList();
+
+        _logger.LogInformation("TMDb list {ListId} parsed intermediate items count: {ParsedCount}", listId, items.Count);
+
+        // Enrich all items (keeps the list order)
+        var pool = await EnrichMovies(client, items);
+
+        // Log the number of movies fetched/enriched
+        _logger.LogInformation("TMDb list {ListId} fetched and enriched {Count} movies", listId, pool.Count);
+
+        _cache.Set(cacheKey, pool.ToArray(), TimeSpan.FromMinutes(10));
+        return Ok(pool.ToArray());
     }
 
     private async Task<List<MovieDto>> GetSampleForRange(HttpClient client, int minVotes, decimal minRating, int fromYear, int toYear, int desired)

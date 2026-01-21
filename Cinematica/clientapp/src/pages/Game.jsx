@@ -13,16 +13,20 @@ export default function Game() {
   const activeCard = useGameStore((s) => s.activeCard);
 
   const cardInfoMovie = useGameStore((s) => s.showCardInfoFor);
+  const cardInfoWrong = useGameStore((s) => s.showCardInfoWrong);
   const openCardInfo = useGameStore((s) => s.openCardInfo);
   const closeCardInfo = useGameStore((s) => s.closeCardInfo);
 
   const [err, setErr] = useState(null);
+  const deckInStore = useGameStore((s) => s.deck);
 
   useEffect(() => {
+    if (deckInStore && deckInStore.length > 0) return;
+
     fetchDeck()
       .then((deck) => startGame(deck))
       .catch((e) => setErr(e.message));
-  }, [startGame]);
+  }, [startGame, deckInStore]);
 
   const handleCardClick = (movie) => {
     openCardInfo(movie);
@@ -45,7 +49,11 @@ export default function Game() {
       </div>
 
       {cardInfoMovie && (
-        <CardInfo movie={cardInfoMovie} onClose={() => closeCardInfo()} />
+        <CardInfo
+          movie={cardInfoMovie}
+          onClose={() => closeCardInfo()}
+          animateWrong={cardInfoWrong}
+        />
       )}
     </>
   );

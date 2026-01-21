@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FastAverageColor } from "fast-average-color";
 import "./CardInfo.css";
 
-export default function CardInfo({ movie, onClose }) {
+export default function CardInfo({ movie, onClose, animateWrong = false }) {
   const [bgGradient, setBgGradient] = useState(
     "linear-gradient(135deg, #222, #111)"
   );
+
+  const panelRef = useRef(null);
+  const [panelSize, setPanelSize] = useState({ w: 0, h: 0, perim: 0 });
 
   useEffect(() => {
     if (!movie) return;
@@ -54,6 +57,31 @@ export default function CardInfo({ movie, onClose }) {
     return () => fac.destroy();
   }, [movie.poster]);
 
+  useEffect(() => {
+    if (!animateWrong) {
+      setPanelSize({ w: 0, h: 0, perim: 0 });
+      return;
+    }
+
+    const measure = () => {
+      const el = panelRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const w = Math.max(0, Math.round(r.width));
+      const h = Math.max(0, Math.round(r.height));
+      setPanelSize({ w, h, perim: 2 * (w + h) });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (panelRef.current) ro.observe(panelRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [movie, animateWrong]);
+
   if (!movie) return null;
 
   return (
@@ -65,6 +93,7 @@ export default function CardInfo({ movie, onClose }) {
     >
       <div
         className="cardinfo-panel"
+        ref={panelRef}
         style={{
           background: bgGradient,
           borderRadius: "16px",
@@ -117,6 +146,43 @@ export default function CardInfo({ movie, onClose }) {
             <p className="cardinfo-desc">{movie.description}</p>
           )}
         </div>
+        {animateWrong && panelSize.perim > 0 && (
+          <svg
+            key={panelSize.perim}
+            className="wrong-anim"
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${panelSize.w} ${panelSize.h}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            style={{
+              // expose perimeter to CSS for dash animation
+              "--perim": panelSize.perim,
+            }}
+          >
+            <defs>
+              <linearGradient id="cardGlow" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#ff3b3b" />
+                <stop offset="55%" stopColor="#ff6b6b" />
+                <stop offset="100%" stopColor="#ff3b3b" />
+              </linearGradient>
+            </defs>
+            <rect
+              className="wrong-rect"
+              x="2"
+              y="2"
+              rx="12"
+              ry="12"
+              width={Math.max(0, panelSize.w - 4)}
+              height={Math.max(0, panelSize.h - 4)}
+              fill="none"
+              stroke="url(#cardGlow)"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
       </div>
     </div>
   );

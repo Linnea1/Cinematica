@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("./assets/fonts/Roboto-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
 :root {
   --navbar-height: 64px; /* adjust to match navbar */
 }
@@ -12,6 +19,7 @@ body,
 }
 
 body {
+  font-family: "Roboto", system-ui, sans-serif;
   min-width: 100vw;
   min-height: 100vh;
 }
