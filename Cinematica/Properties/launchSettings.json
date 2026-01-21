@@ -7,7 +7,7 @@
       "applicationUrl": "https://localhost:7067;http://localhost:5261",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "Tmdb__ApiKey": "863e11e8f4dd22d041191e2533b02444"
+        "Tmdb__ApiKey": ""
       }
     }
   }
